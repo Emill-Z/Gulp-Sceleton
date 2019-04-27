@@ -1,0 +1,16 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.main {
+  &.active {
+    color: blue;
+    display: flex;
+    transform: rotate(150deg);
+  }
+}
+
+.header {
+  background-color: green;
+}

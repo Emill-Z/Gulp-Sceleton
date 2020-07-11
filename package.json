@@ -10,7 +10,7 @@
   "author": "https://github.com/Emill-Z",
   "license": "ISC",
   "dependencies": {
-    "bootstrap": "4.0.0",
+    "bootstrap": "4.3.1",
     "jquery": "3.5.0"
   },
   "devDependencies": {

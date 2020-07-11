@@ -58,10 +58,7 @@ gulp.task('build:css', function() {
       }
     }))
     .pipe(gulpIf(isDevelopment, sourcemaps.write()))
-    .pipe(autoprefixer({
-      browsers: 'last 3 version',
-      cascade: false
-    }))
+    .pipe(autoprefixer())
     .pipe(concat('styles/main.css'))
     .pipe(gulpIf(!isDevelopment, minify_css()))
     .pipe(gulp.dest(dist.root));

@@ -1,4 +1,4 @@
-# gulpSkeleton
+# Gulp Skeleton
 ### Installation
 What you need:
 1. [NPM](https://www.npmjs.com/)
@@ -9,10 +9,8 @@ What you need:
 npm install
 ```
 
-##### dev
-Start `gulp` {run: build, watch and browser sync}
+##### For dev
+Execute `npm start` (This will run: build, watch and browser sync)
 
-or
-
-##### prod
-Start `npm run build` {minify: images, js, css}
+##### For build prod
+Execute `npm run build` (This will minify: images, js, css)

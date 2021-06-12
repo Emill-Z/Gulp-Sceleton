@@ -1,152 +1,133 @@
-'use strict';
 
+const { series, parallel, src, dest, lastRun, watch } = require('gulp');
+const browsersync = require("browser-sync").create();
 const del = require('del');
-const gulp = require('gulp');
-const sass = require('gulp-sass');
+// const sourcemaps = require('gulp-sourcemaps');
 const gulpIf = require('gulp-if');
-const newer = require('gulp-newer');
-const debug = require('gulp-debug');
-const notify = require('gulp-notify');
-const babel = require('gulp-babel');
-const concat = require('gulp-concat');
-const minify_css = require('gulp-minify-css');
-const minify_js = require('gulp-js-minify');
-const minify_image = require('gulp-image');
-const sourcemaps = require('gulp-sourcemaps');
-const browserSync = require('browser-sync').create();
+const sass = require('gulp-sass');
+const notify = require("gulp-notify");
 const autoprefixer = require('gulp-autoprefixer');
-
-const dist = {
-  root: 'dist',
-  fonts: 'src/fonts/**',
-  styles: ['src/styles/fonts.scss', 'src/styles/index.scss', 'src/styles/adaptive.scss'],
-  html: 'src/*.html',
-  img: 'src/img/**',
-  script: 'src/js/**/*.js',
-  lib: 'src/lib/**'
-};
-
-const base = { root: 'src' };
+const imagemin = require('gulp-imagemin');
+const babel = require('gulp-babel');
+const newer = require('gulp-newer');
+const concat = require('gulp-concat');
+const debug = require('gulp-debug');
 
 const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV == 'development';
 
-// clean
-gulp.task('clean', () => del(dist.root));
+const _PATH = {
+    base: 'src',
+    root: 'dist',
+    fonts: 'src/fonts/**',
+    styles: ['src/styles/fonts.scss', 'src/styles/index.scss', 'src/styles/adaptive.scss'],
+    html: 'src/*.html',
+    img: 'src/img/**',
+    script: 'src/js/*.js',
+    lib: 'src/lib/**',
+}
 
-// copy html
-gulp.task('html', () => gulp.src(dist.html).pipe(gulp.dest(dist.root)));
+function browserSync() {
+    return browsersync.init({
+        server: {
+            baseDir: _PATH.root
+        },
+        port: 3000
+    });
+}
 
-// build css from scss or sass
-gulp.task('build:css', function() {
-  return gulp.src(dist.styles, {
-      base: base.root
+// function browserSyncReload(done) {
+//     browsersync.reload();
+//     done();
+// }
+
+function clean() {
+    return del(_PATH.root);
+}
+
+function copyHtml() {
+    return src(_PATH.html).pipe(dest(_PATH.root)).pipe(browsersync.stream());
+}
+
+function buildCss() {
+    return src(_PATH.styles, { base: _PATH.base })
+        // .pipe(gulpIf(isDevelopment, sourcemaps.init()))
+        .pipe(sass().on('error', sass.logError))
+        .on('error', notify.onError(function (err) {
+            return {
+                title: 'sass',
+                message: err.message
+            }
+        }))
+        // .pipe(gulpIf(isDevelopment, sourcemaps.write()))
+        .pipe(autoprefixer())
+        .pipe(concat('styles/main.css'))
+        // .pipe(gulpIf(!isDevelopment, minify_css())) --- is not implemented
+        .pipe(dest(_PATH.root))
+        .pipe(browsersync.stream());
+}
+
+function copyImages() {
+    return src(_PATH.img, {
+        base: _PATH.base,
+        since: lastRun(copyImages)
     })
-    .pipe(gulpIf(isDevelopment, sourcemaps.init()))
-    .pipe(sass().on('error', sass.logError))
-    .on('error', notify.onError(function(err) {
-      return {
-        title: 'sass',
-        message: err.message
-      }
-    }))
-    .pipe(gulpIf(isDevelopment, sourcemaps.write()))
-    .pipe(autoprefixer())
-    .pipe(concat('styles/main.css'))
-    .pipe(gulpIf(!isDevelopment, minify_css()))
-    .pipe(gulp.dest(dist.root));
-});
-
-// copy image
-gulp.task('copy:image', function() {
-  return gulp.src(dist.img, {
-      base: base.root,
-      since: gulp.lastRun('copy:image')
-    })
-    .pipe(newer(dist.root))
+    .pipe(newer(_PATH.root))
     .pipe(debug({
-      title: 'copy:image'
+        title: 'copyImages'
     }))
-    .pipe(gulpIf(!isDevelopment, minify_image()))
-    .pipe(gulp.dest(dist.root));
-});
+    .pipe(gulpIf(!isDevelopment, imagemin()))
+    .pipe(dest(_PATH.root))
+    .pipe(browsersync.stream());
+}
 
-// copy fonts
-gulp.task('copy:fonts', function() {
-  return gulp.src(dist.fonts, {
-      base: base.root,
-      since: gulp.lastRun('copy:fonts')
+function copyFonts() {
+    return src(_PATH.fonts, {
+        base: _PATH.base,
+        since: lastRun(copyFonts)
     })
-    .pipe(newer(dist.root))
+    .pipe(newer(_PATH.root))
     .pipe(debug({
-      title: 'copy:fonts'
+        title: 'copyFonts'
     }))
-    .pipe(gulp.dest(dist.root));
-});
+    .pipe(dest(_PATH.root));
+}
 
-// scripts
-gulp.task('build:script', function() {
-  return gulp.src(dist.script, {
-      base: base.root
-    })
-    .pipe(gulpIf(isDevelopment, sourcemaps.init()))
-    .pipe(babel({
-      presets: ['@babel/env']
-    }))
-    .pipe(concat('js/main.js'))
-    .pipe(gulpIf(isDevelopment, sourcemaps.write()))
-    .pipe(gulpIf(!isDevelopment, minify_js()))
-    .pipe(gulp.dest(dist.root));
-});
+function scripts() {
+    return src(_PATH.script, { base: _PATH.base })
+        // .pipe(gulpIf(isDevelopment, sourcemaps.init()))
+        .pipe(babel({
+            presets: ['@babel/env']
+        }))
+        .pipe(concat('js/main.js'))
+        // .pipe(gulpIf(isDevelopment, sourcemaps.write()))
+        // .pipe(gulpIf(!isDevelopment, minify_js()))
+        .pipe(dest(_PATH.root))
+        .pipe(browsersync.stream());
+}
 
-// move lib
-gulp.task('move:lib', function() {
-  return gulp.src(dist.lib, {
-      base: base.root,
-      since: gulp.lastRun('move:lib')
+function copyLibs() {
+    return src(_PATH.lib, {
+        base: _PATH.base,
+        since: lastRun(copyLibs)
     })
-    .pipe(newer(dist.root))
+    .pipe(newer(_PATH.root))
     .pipe(debug({
-      title: 'move:lib'
+        title: 'copyLibs'
     }))
-    .pipe(gulp.dest(dist.root));
-});
+    .pipe(dest(_PATH.root));
+}
 
-// move bootstrap
-gulp.task('move:bootstrap', () => gulp.src('node_modules/bootstrap/dist/**/*').pipe(gulp.dest('dist/lib/bootstrap')));
+function watchFiles() {
+    watch(_PATH.html, copyHtml);
+    watch(_PATH.fonts, copyFonts);
+    watch(_PATH.img, copyImages);
+    watch(_PATH.styles, buildCss);
+    watch(_PATH.script, scripts);
+}
 
-// move jquery
-gulp.task('move:jquery', () => gulp.src('node_modules/jquery/dist/jquery.min.js').pipe(gulp.dest('dist/lib/jquery')));
+const build = series(clean, parallel(copyHtml, buildCss, copyFonts, copyImages, scripts, copyLibs));
+const watchAndSync = parallel(watchFiles, browserSync);
 
-gulp.task('move', gulp.series('move:bootstrap', 'move:jquery'));
-
-// serve
-gulp.task('serve', function() {
-  browserSync.init({
-    server: dist.root
-  });
-  browserSync.watch('dist/**/*.*').on('change', browserSync.reload);
-});
-
-// WATCHERS
-gulp.task('watch', function() {
-  gulp.watch(dist.html, gulp.series('html'));
-  gulp.watch(dist.fonts, gulp.series('copy:fonts'));
-  gulp.watch(dist.img, gulp.series('copy:image'));
-  gulp.watch(dist.styles, gulp.series('build:css'));
-  gulp.watch(dist.script, gulp.series('build:script'));
-});
-
-/*
-   RUN BUILD DEV
-*/
-gulp.task('build:all', gulp.series('clean', 'move', gulp.parallel('html', 'copy:image', 'copy:fonts', 'build:css', 'build:script', 'move:lib')));
-
-/*
-RUN BUILD WATCH SERVE
-*/
-gulp.task('default', gulp.series('build:all', gulp.parallel('watch', 'serve')));
-
-/*
-RUN BUILD PROD
-*/
-gulp.task('build', gulp.series('build:all'));
+exports.clean = clean;
+exports.build = build;
+exports.default = series(build, watchAndSync);

@@ -12,6 +12,8 @@ const babel = require('gulp-babel');
 const newer = require('gulp-newer');
 const concat = require('gulp-concat');
 const debug = require('gulp-debug');
+const cleanCSS = require('gulp-clean-css');
+const jsmin = require('gulp-jsmin');
 
 const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV == 'development';
 
@@ -35,11 +37,6 @@ function browserSync() {
     });
 }
 
-// function browserSyncReload(done) {
-//     browsersync.reload();
-//     done();
-// }
-
 function clean() {
     return del(_PATH.root);
 }
@@ -50,7 +47,7 @@ function copyHtml() {
 
 function buildCss() {
     return src(_PATH.styles, { base: _PATH.base })
-        // .pipe(gulpIf(isDevelopment, sourcemaps.init()))
+        // .pipe(gulpIf(!isDevelopment, sourcemaps.init()))
         .pipe(sass().on('error', sass.logError))
         .on('error', notify.onError(function (err) {
             return {
@@ -58,10 +55,10 @@ function buildCss() {
                 message: err.message
             }
         }))
-        // .pipe(gulpIf(isDevelopment, sourcemaps.write()))
-        .pipe(autoprefixer())
         .pipe(concat('styles/main.css'))
-        // .pipe(gulpIf(!isDevelopment, minify_css())) --- is not implemented
+        .pipe(autoprefixer())
+        .pipe(gulpIf(!isDevelopment, cleanCSS())) // cleanCSS({ compatibility: 'ie8' })
+        // .pipe(gulpIf(!isDevelopment, sourcemaps.write()))
         .pipe(dest(_PATH.root))
         .pipe(browsersync.stream());
 }
@@ -94,13 +91,13 @@ function copyFonts() {
 
 function scripts() {
     return src(_PATH.script, { base: _PATH.base })
-        // .pipe(gulpIf(isDevelopment, sourcemaps.init()))
+        // .pipe(gulpIf(!isDevelopment, sourcemaps.init()))
         .pipe(babel({
             presets: ['@babel/env']
         }))
         .pipe(concat('js/main.js'))
-        // .pipe(gulpIf(isDevelopment, sourcemaps.write()))
-        // .pipe(gulpIf(!isDevelopment, minify_js()))
+        .pipe(gulpIf(!isDevelopment, jsmin()))
+        // .pipe(gulpIf(!isDevelopment, sourcemaps.write()))
         .pipe(dest(_PATH.root))
         .pipe(browsersync.stream());
 }

@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node_modules/gulp/bin/gulp.js",
-    "build": "NODE_ENV=production node_modules/gulp/bin/gulp.js build"
+    "start": "sh dev.sh",
+    "build": "sh build.sh"
   },
   "author": "https://github.com/Emill-Z",
   "license": "ISC",
@@ -27,6 +27,7 @@
     "gulp-newer": "1.4.0",
     "gulp-notify": "4.0.0",
     "gulp-sass": "4.1.0",
+    "gulp-sass-glob": "^1.1.0",
     "gulp-sourcemaps": "3.0.0",
     "node-sass": "6.0.0"
   }

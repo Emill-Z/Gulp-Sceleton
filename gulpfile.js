@@ -2,7 +2,7 @@
 const { series, parallel, src, dest, lastRun, watch } = require('gulp');
 const browsersync = require("browser-sync").create();
 const del = require('del');
-// const sourcemaps = require('gulp-sourcemaps');
+const sourcemaps = require('gulp-sourcemaps');
 const gulpIf = require('gulp-if');
 const sass = require('gulp-sass');
 const notify = require("gulp-notify");
@@ -22,6 +22,7 @@ const _PATH = {
     root: 'dist',
     fonts: 'src/fonts/**',
     styles: ['src/styles/fonts.scss', 'src/styles/index.scss', 'src/styles/adaptive.scss'],
+    allStyles: ['src/styles/**'],
     html: 'src/*.html',
     img: 'src/img/**',
     script: 'src/js/*.js',
@@ -47,7 +48,7 @@ function copyHtml() {
 
 function buildCss() {
     return src(_PATH.styles, { base: _PATH.base })
-        // .pipe(gulpIf(!isDevelopment, sourcemaps.init()))
+        .pipe(gulpIf(isDevelopment, sourcemaps.init()))
         .pipe(sass().on('error', sass.logError))
         .on('error', notify.onError(function (err) {
             return {
@@ -58,7 +59,7 @@ function buildCss() {
         .pipe(concat('styles/main.css'))
         .pipe(autoprefixer())
         .pipe(gulpIf(!isDevelopment, cleanCSS())) // cleanCSS({ compatibility: 'ie8' })
-        // .pipe(gulpIf(!isDevelopment, sourcemaps.write()))
+        .pipe(gulpIf(isDevelopment, sourcemaps.write()))
         .pipe(dest(_PATH.root))
         .pipe(browsersync.stream());
 }
@@ -91,13 +92,13 @@ function copyFonts() {
 
 function scripts() {
     return src(_PATH.script, { base: _PATH.base })
-        // .pipe(gulpIf(!isDevelopment, sourcemaps.init()))
+        .pipe(gulpIf(isDevelopment, sourcemaps.init()))
         .pipe(babel({
             presets: ['@babel/env']
         }))
         .pipe(concat('js/main.js'))
         .pipe(gulpIf(!isDevelopment, jsmin()))
-        // .pipe(gulpIf(!isDevelopment, sourcemaps.write()))
+        .pipe(gulpIf(isDevelopment, sourcemaps.write()))
         .pipe(dest(_PATH.root))
         .pipe(browsersync.stream());
 }
@@ -118,7 +119,7 @@ function watchFiles() {
     watch(_PATH.html, copyHtml);
     watch(_PATH.fonts, copyFonts);
     watch(_PATH.img, copyImages);
-    watch(_PATH.styles, buildCss);
+    watch(_PATH.allStyles, buildCss);
     watch(_PATH.script, scripts);
 }
 
